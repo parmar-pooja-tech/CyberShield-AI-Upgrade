@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>CyberShield Chat</title>
+
+</head>
+
+<body>
+
+    <h2>🔐 CyberShield Secure Chat</h2>
+
+    <p>
+        Logged in as:
+        <b>{{ username }}</b>
+    </p>
+
+    <hr>
+
+    <div id="messages"></div>
+
+    <br>
+
+    <input
+        id="message"
+        type="text"
+        placeholder="Type your message..."
+    >
+
+    <button onclick="sendMessage()">
+        Send
+    </button>
+
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <script>
+
+        const socket = io();
+
+
+        socket.on("message", function(message) {
+
+            const div = document.createElement("div");
+
+            div.innerText = message;
+
+            document
+                .getElementById("messages")
+                .appendChild(div);
+
+        });
+
+
+        function sendMessage() {
+
+            const input =
+                document.getElementById("message");
+
+            const message = input.value;
+
+            if (message.trim() !== "") {
+
+                socket.send(message);
+
+                input.value = "";
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>

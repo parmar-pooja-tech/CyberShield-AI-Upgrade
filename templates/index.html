@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield Threat Analyzer</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: radial-gradient(circle at top left, #123456, transparent 35%), #07111f;
+            color: white;
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        .container { max-width: 1000px; margin: auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .shield { font-size: 55px; margin-bottom: 10px; }
+        .header h1 { font-size: 38px; margin-bottom: 8px; }
+        .header h1 span { color: #35c9ff; }
+        .header p, .description { color: #a9b8c8; line-height: 1.6; }
+
+        .card {
+            background: rgba(15, 30, 48, 0.95);
+            border: 1px solid #23425f;
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+            margin-bottom: 25px;
+        }
+
+        .card h2 { margin-bottom: 12px; font-size: 22px; }
+        .description { margin-bottom: 20px; }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            resize: vertical;
+            background: #081625;
+            color: white;
+            border: 1px solid #31516d;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        textarea:focus { border-color: #35c9ff; }
+        textarea::placeholder { color: #71869a; }
+        .button-container { text-align: center; margin-top: 20px; }
+
+        button {
+            background: #168ac4;
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover { background: #0f74a7; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #result { display: none; }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .status { font-size: 24px; font-weight: bold; }
+        .threat { color: #ff6b6b; }
+        .safe { color: #55d68a; }
+
+        .risk {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            background: #263b50;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .result-box {
+            background: #0a1929;
+            border: 1px solid #203b55;
+            border-radius: 12px;
+            padding: 18px;
+            min-width: 0;
+        }
+
+        .result-box h3 { color: #35c9ff; margin-bottom: 12px; font-size: 16px; }
+        .result-box p { color: #d4dee8; line-height: 1.6; overflow-wrap: anywhere; }
+        ul { padding-left: 20px; color: #d4dee8; }
+        li { margin-bottom: 8px; line-height: 1.5; }
+
+        .recommendation, .notice {
+            margin-top: 18px;
+            background: #10283d;
+            border-left: 4px solid #35c9ff;
+            padding: 16px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .notice { border-left-color: #e8b65b; color: #d4dee8; }
+        .case-study { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+
+        .case-item {
+            background: #0a1929;
+            border: 1px solid #203b55;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .case-item strong { display: block; color: #35c9ff; margin-bottom: 7px; }
+        .case-item span { color: #c4d1dc; font-size: 14px; line-height: 1.5; }
+        footer { text-align: center; color: #71869a; margin-top: 30px; font-size: 13px; line-height: 1.8; }
+        #loading { display: none; text-align: center; margin-top: 15px; color: #35c9ff; }
+
+        @media (max-width: 700px) {
+            body { padding: 15px; }
+            .header h1 { font-size: 28px; }
+            .result-grid { grid-template-columns: 1fr; }
+            .case-study { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <header class="header">
+        <div class="shield">🛡️</div>
+        <h1>Cyber<span>Shield</span></h1>
+        <p>AI-Assisted Phishing &amp; Cyber Threat Analyzer</p>
+    </header>
+
+    <section class="card">
+        <h2>🔍 Analyze Suspicious Message</h2>
+        <p class="description">
+            Paste a suspicious email, message, or security notification.
+            CyberShield checks rule-based indicators, an ML demonstration
+            model, and optional Gemini AI analysis.
+        </p>
+
+        <textarea id="message" maxlength="10000"
+            placeholder="Example: Urgent! Your account will be suspended. Please verify your password..."></textarea>
+
+        <div class="button-container">
+            <button id="analyzeButton" type="button" onclick="analyzeMessage()">
+                🔎 ANALYZE THREAT
+            </button>
+        </div>
+        <div id="loading" role="status" aria-live="polite">⏳ Analyzing message...</div>
+    </section>
+
+    <section class="card" id="result" aria-live="polite">
+        <div class="result-header">
+            <div class="status" id="status"></div>
+            <div class="risk" id="risk"></div>
+        </div>
+
+        <div class="result-grid">
+            <div class="result-box">
+                <h3>🎯 Rule-Based Risk Score</h3>
+                <p id="score"></p>
+            </div>
+
+            <div class="result-box">
+                <h3>🧩 Detected Threat Types</h3>
+                <p id="threatTypes"></p>
+            </div>
+
+            <div class="result-box">
+                <h3>🚨 Detected Indicators</h3>
+                <ul id="indicators"></ul>
+            </div>
+
+            <div class="result-box">
+                <h3>🤖 Gemini AI Analysis</h3>
+                <p id="aiStatus"></p>
+                <p id="aiAnalysis"></p>
+            </div>
+
+            <div class="result-box">
+                <h3>🧠 ML Classification</h3>
+                <p id="mlPrediction"></p>
+                <p id="mlAccuracy"></p>
+            </div>
+
+            <div class="result-box">
+                <h3>🔗 ML Clustering</h3>
+                <p id="mlCluster"></p>
+                <p>Cluster IDs are arbitrary groups, not safe or malicious labels.</p>
+            </div>
+        </div>
+
+        <div class="recommendation">
+            <strong>🛡️ Recommendation</strong>
+            <p id="recommendation"></p>
+        </div>
+
+        <div class="notice">
+            <strong>⚖️ Responsible AI &amp; Privacy</strong>
+            <ul id="responsibleAI"></ul>
+            <p id="mlNote"></p>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>📚 Case Study Reference</h2>
+        <p class="description">
+            CyberShield demonstrates indicators relevant to phishing
+            and social-engineering analysis. Verify incident details
+            against your cited source before presenting them as facts.
+        </p>
+
+        <div class="case-study">
+            <div class="case-item">
+                <strong>Incident</strong>
+                <span>Code of Conduct Phishing Campaign</span>
+            </div>
+            <div class="case-item">
+                <strong>Observed</strong>
+                <span>14–16 April 2026</span>
+            </div>
+            <div class="case-item">
+                <strong>Target</strong>
+                <span>35,000+ users</span>
+            </div>
+            <div class="case-item">
+                <strong>Technique</strong>
+                <span>Phishing + AiTM</span>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        CyberShield – AI-Assisted Cyber Threat Analysis Tool<br>
+        B.Sc. Cyber &amp; Digital Science | 2026–27
+    </footer>
+</div>
+
+<script>
+async function analyzeMessage() {
+    const messageInput = document.getElementById("message");
+    const button = document.getElementById("analyzeButton");
+    const loading = document.getElementById("loading");
+    const result = document.getElementById("result");
+    const message = messageInput.value.trim();
+
+    if (!message) {
+        alert("Please enter a message to analyze.");
+        return;
+    }
+
+    button.disabled = true;
+    loading.style.display = "block";
+    result.style.display = "none";
+
+    try {
+        const response = await fetch("/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || "Something went wrong.");
+            return;
+        }
+
+        const isThreat = data.status === "THREAT";
+        const statusElement = document.getElementById("status");
+
+        statusElement.textContent = isThreat
+            ? "⚠️ THREAT INDICATORS DETECTED"
+            : data.status === "SAFE"
+                ? "✅ NO STRONG RULE-BASED INDICATORS"
+                : "⚠️ RESULT UNCERTAIN";
+
+        statusElement.className = "status " + (isThreat ? "threat" : "safe");
+
+        document.getElementById("risk").textContent =
+            "Rule-Based Risk: " + (data.risk ?? "Unavailable");
+
+        document.getElementById("score").textContent =
+            (data.score ?? "N/A") + " detection points";
+
+        document.getElementById("threatTypes").textContent =
+            Array.isArray(data.threat_types) && data.threat_types.length
+                ? data.threat_types.join(", ")
+                : "No specific threat type detected";
+
+        const indicatorList = document.getElementById("indicators");
+        indicatorList.replaceChildren();
+
+        const indicators = Array.isArray(data.indicators) && data.indicators.length
+            ? data.indicators
+            : ["No strong indicators detected."];
+
+        indicators.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            indicatorList.appendChild(li);
+        });
+
+        document.getElementById("aiStatus").textContent =
+            "Status: " + (data.ai_status || "Not reported");
+
+        document.getElementById("aiAnalysis").textContent =
+            data.ai_analysis || "AI analysis is unavailable.";
+
+        document.getElementById("mlPrediction").textContent =
+            "Prediction: " + (data.ml_prediction || "Unavailable");
+
+        document.getElementById("mlAccuracy").textContent =
+            data.ml_test_accuracy == null
+                ? "Test accuracy: unavailable"
+                : "Demonstration test accuracy: " + data.ml_test_accuracy + "%";
+
+        document.getElementById("mlCluster").textContent =
+            data.ml_cluster == null
+                ? "Cluster assignment: unavailable"
+                : "Assigned cluster: " + data.ml_cluster;
+
+        document.getElementById("recommendation").textContent =
+            data.recommendation || "Review the message carefully.";
+
+        const responsibleList = document.getElementById("responsibleAI");
+        responsibleList.replaceChildren();
+
+        const guidance = Array.isArray(data.responsible_ai)
+            ? data.responsible_ai
+            : [
+                "Predictions may be incorrect.",
+                "Do not share real passwords or OTPs.",
+                "Verify unexpected requests through an official channel."
+            ];
+
+        guidance.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            responsibleList.appendChild(li);
+        });
+
+        document.getElementById("mlNote").textContent =
+            data.ml_model_note || "ML output is experimental and must not be treated as proof.";
+
+        result.style.display = "block";
+        result.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (error) {
+        console.error(error);
+        alert("Unable to connect to the server. Check that Flask is running.");
+    } finally {
+        button.disabled = false;
+        loading.style.display = "none";
+    }
+}
+</script>
+</body>
+</html>
